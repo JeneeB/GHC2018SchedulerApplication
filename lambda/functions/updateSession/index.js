@@ -160,7 +160,7 @@ function updateConflicts(items, hasConflict, updatedIds, context) {
         dynamoDb.update(params)
         .promise()
         .then(function(updated)  {
-            //Successfully updated this item
+            //Success
         }) 
         .catch(dbError => {
             let errorResponse = `Error: Execution update, caused a Dynamodb error, please look at your logs.`;
