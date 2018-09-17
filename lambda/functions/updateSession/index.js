@@ -52,7 +52,7 @@ exports.handler = (event, context, callback) => {
         //if the property that was updated was not isSelected, we can return
         const importantProperty = "isSelected";
         if (!Object.keys(editedItem).includes(importantProperty)) {
-            return context.succeed(processResponse(IS_CORS, updated["Attributes"]["id"])); 
+            callback(null, processResponse(IS_CORS, updated["Attributes"]["id"]));
         }
         performPostUpdateActions(updated, importantProperty, updatedIds, context);
         
@@ -65,6 +65,7 @@ exports.handler = (event, context, callback) => {
         console.log(dbError);
         return processResponse(IS_CORS, errorResponse, 500);
     });
+    callback(null, processResponse(IS_CORS, "Success"));
 };
 
 
@@ -96,7 +97,7 @@ function performPostUpdateActions(updated, importantProperty, updatedIds, contex
                 gatherConflictingSessions(data.Items, updatedItem, conflictingSessionsToSet);
                 
                 if (conflictingSessionsToSet.length == 0) {
-                    context.succeed(processResponse(IS_CORS, updatedIds));  
+                    context.succeed(processResponse(IS_CORS, "Success"));  
                 }
                 updateConflicts(conflictingSessionsToSet, 1, updatedIds, context);
                 
@@ -114,7 +115,7 @@ function performPostUpdateActions(updated, importantProperty, updatedIds, contex
                     }
                 });
                 if (conflictingSessionsToUnset.length == 0) {
-                    return context.succeed(processResponse(IS_CORS, updatedIds));  
+                    return context.succeed(processResponse(IS_CORS, "Success"));  
                 }
                 updateConflicts(conflictingSessionsToUnset, 0, updatedIds, context);
             }
@@ -159,7 +160,7 @@ function updateConflicts(items, hasConflict, updatedIds, context) {
         dynamoDb.update(params)
         .promise()
         .then(function(updated)  {
-            context.succeed(processResponse(IS_CORS, updatedIds)); 
+            //Successfully updated this item
         }) 
         .catch(dbError => {
             let errorResponse = `Error: Execution update, caused a Dynamodb error, please look at your logs.`;
@@ -196,11 +197,12 @@ function parseTime(timeString) {
 function processResponse(isCors, body, statusCode) {
     const status = statusCode || (body ? 200 : 204);
     const headers = { 'Content-Type': 'application/json' };
+
     if (isCors) {
         Object.assign(headers, {
             'Access-Control-Allow-Headers': 'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token',
             'Access-Control-Allow-Methods': 'OPTIONS,PUT,POST',
-            'Access-Control-Allow-Origin': process.env.CORS_ORIGIN,
+            'Access-Control-Allow-Origin': '*',
             'Access-Control-Max-Age': '86400'
         });
     }
@@ -209,4 +211,4 @@ function processResponse(isCors, body, statusCode) {
         body: JSON.stringify(body) || '',
         headers: headers
     };
-};
+}
